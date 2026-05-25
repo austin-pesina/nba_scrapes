@@ -152,6 +152,7 @@ print('Roster scraping complete.')
 
 # %%
 player_stats = all_player_stats(roster, season)
+player_stats['last_updated'] = datetime.datetime.now().isoformat()
 print('Player stats scraping complete.')
 
 # %%
