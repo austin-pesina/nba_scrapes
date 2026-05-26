@@ -2,6 +2,7 @@
 import time
 import datetime
 import os
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -16,6 +17,8 @@ from dotenv import load_dotenv
 # %%
 load_dotenv()
 season = '2026'
+data_dir = Path("data")
+data_dir.mkdir(parents = True, exist_ok = True)
 
 # %%
 def playoff_teams(year: str) -> list:
@@ -191,9 +194,13 @@ with sf_connect() as conn:
 
 
 # %%
-player_stats.to_csv(f'data/player_stats_{season}_playoffs.csv', index=False)
+csv_path = data_dir / f'player_stats_{season}_playoffs.csv'
+parquet_path = data_dir / f'player_stats_{season}_playoffs.parquet'
+
+player_stats.to_csv(csv_path, index = False)
+
 player_stats_table = pa.Table.from_pandas(player_stats)
-pq.write_table(player_stats_table, f'data/player_stats_{season}_playoffs.parquet')
+pq.write_table(player_stats_table, parquet_path)
 
 # %%
 
