@@ -42,7 +42,7 @@ def playoff_teams(year: str) -> list:
 
 # %%
 teams = playoff_teams(season)
-teams = teams.sort()
+teams = sorted(teams)
 
 # %%
 def player_list(year: str) -> dict:
