@@ -2,7 +2,8 @@ name: NBA Playoffs Stats Ingestion
 
 on:
   schedule:
-    - cron: "0 3 * 4-6 *"
+  # This is UTC not CT
+    - cron: "0 8 * 4-6 *"
   workflow_dispatch:
 
 jobs:
