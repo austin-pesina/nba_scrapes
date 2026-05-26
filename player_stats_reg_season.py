@@ -1,13 +1,19 @@
 # %%
 import time
+import datetime
+import os
 
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import snowflake.connector
+from snowflake.connector.pandas_tools import write_pandas
+from dotenv import load_dotenv
 
 # %%
+load_dotenv()
 season = '2026'
 
 
@@ -123,13 +129,39 @@ def all_player_stats(players_dict: dict,
     return final_df
 
 # %%
+def sf_connect():
+    cnx = snowflake.connector.connect(
+        user=os.getenv('SNOWFLAKE_USER'),
+        password=os.getenv('SNOWFLAKE_PASSWORD'),
+        account=os.getenv('SNOWFLAKE_ACCOUNT'),
+        warehouse=os.getenv('SNOWFLAKE_WAREHOUSE'),
+        database=os.getenv('SNOWFLAKE_DATABASE'),
+        schema=os.getenv('SNOWFLAKE_SCHEMA'),
+        role=os.getenv('SNOWFLAKE_ROLE')
+    )
+    return cnx
+
+# %%
 roster = player_list(season)
 print('Roster scraping complete.')
 
 
 # %%
 player_stats = all_player_stats(roster, season)
+player_stats['last_updated'] = datetime.datetime.now().isoformat()
 print('Player stats scraping complete.')
+
+# %%
+with sf_connect() as conn:
+    write_pandas(
+        conn=conn,
+        df=player_stats,
+        table_name='PLAYER_STATS_REGULAR_SEASON',
+        schema='RAW',
+        database='NBA',
+        auto_create_table=False,
+        quote_identifiers=False
+    )
 
 # %%
 player_stats.to_csv(f'data/player_stats_{season}.csv', index=False)
@@ -149,9 +181,23 @@ for team, players in roster.items():
         })
 
 roster_df = pd.DataFrame(rows)
+roster_df['last_updated'] = datetime.datetime.now().isoformat()
+
+# %%
+with sf_connect() as conn:
+    write_pandas(
+        conn=conn,
+        df=roster_df,
+        table_name='PLAYER_ROSTER',
+        schema='RAW',
+        database='NBA',
+        auto_create_table=False,
+        quote_identifiers=False
+    )
 
 # %%
 roster_df.to_csv(f'data/player_roster_{season}.csv', index=False)
 roster_table = pa.Table.from_pandas(roster_df)
 pq.write_table(roster_table, f'data/player_roster_{season}.parquet')
+
 # %%
